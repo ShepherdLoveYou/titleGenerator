@@ -17,7 +17,7 @@ git clone https://github.com/ShepherdLoveYou/titleGenerator.git
 cd titleGenerator
 ```
 
-双击 `poster.html`，浏览器会直接打开。或在 VS Code 中右键 → Open with Live Server。
+双击 `index.html`，浏览器会直接打开。或在 VS Code 中右键 → Open with Live Server。
 
 不需要 npm、不需要 build、不需要任何依赖。
 
@@ -25,7 +25,7 @@ cd titleGenerator
 
 ```
 .
-├── poster.html      # 全部功能在这一个文件里（HTML + CSS + JS 内嵌）
+├── index.html      # 全部功能在这一个文件里（HTML + CSS + JS 内嵌）
 ├── README.md
 └── LICENSE
 ```
