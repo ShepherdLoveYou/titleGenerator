@@ -150,6 +150,17 @@
     margin-top: 4px;
     line-height: 1.5;
   }
+  .credit {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .credit strong { color: #222; }
+  .credit a { color: var(--muted); text-decoration: none; }
+  .credit a:hover { color: #222; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -240,6 +251,10 @@
     </div>
     <div class="actions" style="margin-top: 8px; padding-top: 0; border: 0;">
       <button id="copySvg" class="secondary" type="button">复制 SVG 代码</button>
+    </div>
+
+    <div class="credit">
+      by <strong>Mac Jiang</strong> · <a href="https://github.com/ShepherdLoveYou/titleGenerator" target="_blank" rel="noopener">GitHub</a>
     </div>
   </div>
 
