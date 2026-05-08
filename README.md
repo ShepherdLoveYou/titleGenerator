@@ -13,8 +13,8 @@
 ## 快速开始
 
 ```
-git clone <你的仓库地址>
-cd title-generator
+git clone https://github.com/ShepherdLoveYou/titleGenerator.git
+cd titleGenerator
 ```
 
 双击 `poster.html`，浏览器会直接打开。或在 VS Code 中右键 → Open with Live Server。
