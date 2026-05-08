@@ -416,7 +416,7 @@
 
     <div class="brand">
       <h1>头条海报生成器</h1>
-      <p class="tagline">8 套预设 · 4 种尺寸 · 文字效果 · 装饰元素</p>
+      <p class="tagline">8 套预设 · 5 平台尺寸 · 文字效果 · 装饰元素</p>
     </div>
 
     <!-- Preset gallery -->
@@ -724,10 +724,11 @@
   /* ============================================================ */
 
   const SIZES = {
-    '16:9': { w: 1920, h: 1080, label: '16:9 头条' },
-    '1:1':  { w: 1080, h: 1080, label: '1:1 朋友圈' },
-    '4:5':  { w: 1080, h: 1350, label: '4:5 小红书' },
-    '9:16': { w: 1080, h: 1920, label: '9:16 Stories' },
+    toutiao:   { w: 1920, h: 1080, label: '头条' },
+    xueqiu:    { w: 1200, h: 675,  label: '雪球' },
+    twitter:   { w: 1600, h: 900,  label: '推特' },
+    eastmoney: { w: 1080, h: 608,  label: '东方财富' },
+    story:     { w: 1080, h: 1920, label: 'Story' },
   };
 
   const PRESETS = [
@@ -818,7 +819,7 @@
   /* ============================================================ */
 
   const state = {
-    size: '16:9',
+    size: 'toutiao',
     activePreset: 'classic-red',
     lines: [
       { text: '$超威半导体(AMD)$:', color: null },
