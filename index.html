@@ -1010,11 +1010,14 @@
       noiseLayer = `<rect width="${W}" height="${H}" filter="url(#noise)"/>`;
     }
 
-    /* large quote decoration */
+    /* large quote decoration — curly opening quote pinned to upper-left,
+       sized off the shorter side so it scales sanely on portrait/square canvases */
     let quoteLayer = '';
     if (d.quote) {
-      const qSize = Math.max(W, H) * 0.7;
-      quoteLayer = `<text x="${W * 0.06}" y="${H * 0.42}" fill="${d.quoteColor}" opacity="${d.quoteOpacity}" font-size="${qSize}" font-family='Georgia, serif' font-weight="900" text-anchor="start" dominant-baseline="alphabetic">"</text>`;
+      const qSize = Math.min(W, H) * 0.95;
+      const qx = W * 0.02;
+      const qy = -qSize * 0.05;
+      quoteLayer = `<text x="${qx}" y="${qy}" fill="${d.quoteColor}" opacity="${d.quoteOpacity}" font-size="${qSize}" font-family='Georgia, "Times New Roman", "SimSun", "宋体", serif' font-weight="900" text-anchor="start" dominant-baseline="text-before-edge">“</text>`;
     }
 
     /* top / bottom bars */
