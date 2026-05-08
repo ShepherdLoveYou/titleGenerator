@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>头条海报标题生成器</title>
+<style>
+  :root {
+    --gap: 16px;
+    --border: #ddd;
+    --muted: #888;
+    --bg: #f5f5f5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: #222;
+  }
+  .app {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    min-height: 100vh;
+  }
+  .panel {
+    background: #fff;
+    border-right: 1px solid var(--border);
+    padding: 20px;
+    overflow-y: auto;
+    max-height: 100vh;
+  }
+  .preview {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+  h1 {
+    font-size: 16px;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .row { margin-bottom: var(--gap); }
+  .row label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .row input[type="text"],
+  .row input[type="number"],
+  .row select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .row input[type="color"] {
+    width: 60px;
+    height: 32px;
+    padding: 2px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+  .row .inline {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .row .inline input[type="text"] {
+    flex: 1;
+  }
+  .lines-list .line-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .lines-list .line-row input { flex: 1; }
+  .lines-list .line-row button {
+    width: 28px;
+    height: 32px;
+    border: 1px solid var(--border);
+    background: #fafafa;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #666;
+  }
+  .lines-list .line-row button:hover { background: #f0f0f0; }
+  .add-line {
+    width: 100%;
+    padding: 8px;
+    border: 1px dashed var(--border);
+    background: #fafafa;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .add-line:hover { background: #f0f0f0; }
+  .add-line:disabled { opacity: 0.4; cursor: not-allowed; }
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .actions button {
+    flex: 1;
+    padding: 10px;
+    border: 0;
+    background: #222;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .actions button:hover { background: #000; }
+  .actions button.secondary {
+    background: #fff;
+    color: #222;
+    border: 1px solid var(--border);
+  }
+  .actions button.secondary:hover { background: #f0f0f0; }
+  #stage {
+    width: 100%;
+    max-width: 1200px;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  }
+  #stage svg { width: 100%; height: 100%; display: block; }
+  .meta {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel">
+    <h1>海报标题生成器</h1>
+
+    <div class="row">
+      <label>标题行（2–6 行，自动垂直居中）</label>
+      <div id="lines" class="lines-list"></div>
+      <button id="addLine" class="add-line" type="button">+ 添加一行</button>
+      <div class="hint">提示：用 <code>$文本$</code> 包裹的内容会被识别为股票名占位（视觉上保持原样，方便后期替换样式）。</div>
+    </div>
+
+    <div class="row">
+      <label>背景颜色（无图时使用，或作为图片下方底色）</label>
+      <div class="inline">
+        <input id="bgColor" type="color" value="#CC0000" />
+        <input id="bgColorHex" type="text" value="#CC0000" />
+      </div>
+    </div>
+
+    <div class="row">
+      <label>背景图片（可选）</label>
+      <div class="inline">
+        <input id="bgImageInput" type="file" accept="image/*" style="flex:1; font-size:12px;" />
+        <button id="bgImageClear" type="button" style="padding:6px 10px; border:1px solid var(--border); background:#fafafa; border-radius:4px; cursor:pointer; font-size:12px;">清除</button>
+      </div>
+      <div class="hint">图片会按 cover 模式铺满 1920×1080。导出 PNG 时图片会一起嵌入。</div>
+    </div>
+
+    <div class="row">
+      <label>背景模糊强度 (px)</label>
+      <div class="inline">
+        <input id="blur" type="range" min="0" max="150" step="1" value="0" title="背景模糊滑块" style="flex:1;" />
+        <input id="blurValue" type="number" min="0" max="300" step="1" value="0" title="背景模糊数值 (px)" style="width:70px;" />
+      </div>
+      <div class="hint">滑块到 150；如需更强可在右侧数字框直接填到 300。0 = 不模糊。</div>
+    </div>
+
+    <div class="row">
+      <label>暗化遮罩透明度 <span id="overlayValue" style="color:#222; font-weight:600;">0</span></label>
+      <input id="overlay" type="range" min="0" max="1" step="0.05" value="0" style="width:100%;" />
+      <div class="hint">在图片之上叠一层黑色半透明，让白色文字更清晰。0 = 不叠，1 = 全黑。</div>
+    </div>
+
+    <div class="row">
+      <label>文字颜色</label>
+      <div class="inline">
+        <input id="textColor" type="color" value="#FFFFFF" />
+        <input id="textColorHex" type="text" value="#FFFFFF" />
+      </div>
+    </div>
+
+    <div class="row">
+      <label>字号 (px)</label>
+      <input id="fontSize" type="number" value="80" min="20" max="200" step="2" />
+    </div>
+
+    <div class="row">
+      <label>行高 (px)</label>
+      <input id="lineHeight" type="number" value="120" min="40" max="300" step="2" />
+    </div>
+
+    <div class="row">
+      <label>字体</label>
+      <select id="fontFamily">
+        <option value='"SimHei", "黑体", "Heiti SC", "PingFang SC", sans-serif' selected>黑体（SimHei）</option>
+        <option value='SimSun, "宋体", "Songti SC", "STSong", serif'>宋体（SimSun）</option>
+        <option value='"Microsoft YaHei", "PingFang SC", sans-serif'>微软雅黑</option>
+        <option value='"KaiTi", "楷体", "STKaiti", serif'>楷体（KaiTi）</option>
+        <option value='"FangSong", "仿宋", serif'>仿宋（FangSong）</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label>字重</label>
+      <select id="fontWeight">
+        <option value="bold" selected>粗体</option>
+        <option value="normal">常规</option>
+        <option value="900">特粗</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button id="exportSvg" type="button">导出 SVG</button>
+      <button id="exportPng" type="button">导出 PNG</button>
+    </div>
+    <div class="actions" style="margin-top: 8px; padding-top: 0; border: 0;">
+      <button id="copySvg" class="secondary" type="button">复制 SVG 代码</button>
+    </div>
+  </div>
+
+  <div class="preview">
+    <div id="stage"></div>
+    <div class="meta">实际输出尺寸 1920 × 1080</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const W = 1920, H = 1080;
+  const defaultLines = [
+    "$超威半导体(AMD)$:",
+    "当所有人都相信它会成为",
+    "“下个英伟达”时，",
+    "我选择不投"
+  ];
+
+  const els = {
+    lines: document.getElementById('lines'),
+    addLine: document.getElementById('addLine'),
+    bgColor: document.getElementById('bgColor'),
+    bgColorHex: document.getElementById('bgColorHex'),
+    bgImageInput: document.getElementById('bgImageInput'),
+    bgImageClear: document.getElementById('bgImageClear'),
+    blur: document.getElementById('blur'),
+    blurValue: document.getElementById('blurValue'),
+    overlay: document.getElementById('overlay'),
+    overlayValue: document.getElementById('overlayValue'),
+    textColor: document.getElementById('textColor'),
+    textColorHex: document.getElementById('textColorHex'),
+    fontSize: document.getElementById('fontSize'),
+    lineHeight: document.getElementById('lineHeight'),
+    fontFamily: document.getElementById('fontFamily'),
+    fontWeight: document.getElementById('fontWeight'),
+    stage: document.getElementById('stage'),
+    exportSvg: document.getElementById('exportSvg'),
+    exportPng: document.getElementById('exportPng'),
+    copySvg: document.getElementById('copySvg'),
+  };
+
+  let lines = defaultLines.slice();
+  let bgImageDataUrl = null;
+
+  function renderLineInputs() {
+    els.lines.innerHTML = '';
+    lines.forEach((text, i) => {
+      const row = document.createElement('div');
+      row.className = 'line-row';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = text;
+      input.placeholder = `第 ${i + 1} 行`;
+      input.addEventListener('input', () => {
+        lines[i] = input.value;
+        render();
+      });
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.textContent = '×';
+      removeBtn.title = '删除此行';
+      removeBtn.addEventListener('click', () => {
+        if (lines.length <= 2) return;
+        lines.splice(i, 1);
+        renderLineInputs();
+        render();
+      });
+      removeBtn.disabled = lines.length <= 2;
+      row.appendChild(input);
+      row.appendChild(removeBtn);
+      els.lines.appendChild(row);
+    });
+    els.addLine.disabled = lines.length >= 6;
+  }
+
+  function escapeXml(s) {
+    return s.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+  }
+
+  function buildSvg() {
+    const bg = els.bgColor.value;
+    const fg = els.textColor.value;
+    const fs = parseInt(els.fontSize.value, 10) || 80;
+    const lh = parseInt(els.lineHeight.value, 10) || 120;
+    const ff = els.fontFamily.value;
+    const fw = els.fontWeight.value;
+    const blurAmount = parseFloat(els.blur.value) || 0;
+    const overlayOpacity = parseFloat(els.overlay.value) || 0;
+    const cx = W / 2;
+    const cy = H / 2;
+    const n = lines.length;
+
+    const texts = lines.map((line, i) => {
+      const yCenter = cy + (i - (n - 1) / 2) * lh;
+      return `  <text x="${cx}" y="${yCenter}" fill="${fg}" font-size="${fs}" font-weight="${fw}" font-family='${ff}' text-anchor="middle" dominant-baseline="central">${escapeXml(line)}</text>`;
+    }).join('\n');
+
+    let defs = '';
+    let imageLayer = '';
+    if (bgImageDataUrl) {
+      // 模糊会让边缘出现透明带 — 把图片向四周扩展 pad px，刚好被画布裁掉
+      const pad = Math.ceil(blurAmount * 4) + 20;
+      const filterAttr = blurAmount > 0 ? ' filter="url(#bgBlur)"' : '';
+      if (blurAmount > 0) {
+        defs = `  <defs>
+    <filter id="bgBlur" x="0" y="0" width="100%" height="100%">
+      <feGaussianBlur stdDeviation="${blurAmount}" />
+    </filter>
+  </defs>\n`;
+      }
+      imageLayer = `  <image href="${bgImageDataUrl}" x="${-pad}" y="${-pad}" width="${W + pad * 2}" height="${H + pad * 2}" preserveAspectRatio="xMidYMid slice"${filterAttr} />\n`;
+    }
+
+    const overlayLayer = overlayOpacity > 0
+      ? `  <rect width="${W}" height="${H}" fill="black" opacity="${overlayOpacity}" />\n`
+      : '';
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+${defs}  <rect width="${W}" height="${H}" fill="${bg}" />
+${imageLayer}${overlayLayer}${texts}
+</svg>`;
+  }
+
+  function render() {
+    els.stage.innerHTML = buildSvg();
+  }
+
+  function syncColorPair(picker, hex) {
+    picker.addEventListener('input', () => {
+      hex.value = picker.value.toUpperCase();
+      render();
+    });
+    hex.addEventListener('input', () => {
+      const v = hex.value.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+        picker.value = v;
+        render();
+      }
+    });
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  }
+
+  function timestamp() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  }
+
+  els.exportSvg.addEventListener('click', () => {
+    const svg = buildSvg();
+    downloadBlob(new Blob([svg], { type: 'image/svg+xml' }), `poster_${timestamp()}.svg`);
+  });
+
+  els.exportPng.addEventListener('click', () => {
+    const svg = buildSvg();
+    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, W, H);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(b => downloadBlob(b, `poster_${timestamp()}.png`), 'image/png');
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      alert('PNG 导出失败，请改用 SVG 导出后用其他工具转换。');
+    };
+    img.src = url;
+  });
+
+  els.copySvg.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(buildSvg());
+      els.copySvg.textContent = '已复制 ✓';
+      setTimeout(() => { els.copySvg.textContent = '复制 SVG 代码'; }, 1500);
+    } catch (e) {
+      alert('复制失败，请手动从导出的 SVG 文件中获取。');
+    }
+  });
+
+  els.addLine.addEventListener('click', () => {
+    if (lines.length >= 6) return;
+    lines.push('');
+    renderLineInputs();
+    render();
+  });
+
+  syncColorPair(els.bgColor, els.bgColorHex);
+  syncColorPair(els.textColor, els.textColorHex);
+  ['fontSize', 'lineHeight', 'fontFamily', 'fontWeight'].forEach(k => {
+    els[k].addEventListener('input', render);
+    els[k].addEventListener('change', render);
+  });
+
+  els.blur.addEventListener('input', () => {
+    els.blurValue.value = els.blur.value;
+    render();
+  });
+  els.blurValue.addEventListener('input', () => {
+    const v = parseFloat(els.blurValue.value);
+    if (Number.isFinite(v)) {
+      els.blur.value = Math.min(parseFloat(els.blur.max), Math.max(0, v));
+      render();
+    }
+  });
+  els.overlay.addEventListener('input', () => {
+    els.overlayValue.textContent = parseFloat(els.overlay.value).toFixed(2);
+    render();
+  });
+
+  els.bgImageInput.addEventListener('change', () => {
+    const file = els.bgImageInput.files && els.bgImageInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      bgImageDataUrl = e.target.result;
+      render();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  els.bgImageClear.addEventListener('click', () => {
+    bgImageDataUrl = null;
+    els.bgImageInput.value = '';
+    render();
+  });
+
+  renderLineInputs();
+  render();
+})();
+</script>
+</body>
+</html>
