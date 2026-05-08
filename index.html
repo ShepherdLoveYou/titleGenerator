@@ -2,506 +2,1465 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
-<title>头条海报标题生成器</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>头条海报生成器</title>
 <style>
   :root {
-    --gap: 16px;
-    --border: #ddd;
-    --muted: #888;
-    --bg: #f5f5f5;
+    --bg: #fafafa;
+    --surface: #fff;
+    --border: #e8e8e8;
+    --border-strong: #d4d4d4;
+    --hover: #f5f5f5;
+    --active: #ededed;
+    --text: #0a0a0a;
+    --muted: #737373;
+    --subtle: #a3a3a3;
+    --accent: #000;
+    --danger: #dc2626;
+    --radius: 6px;
+    --gap: 12px;
+    --t: 0.15s ease;
   }
   * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
   body {
-    margin: 0;
-    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
+                 "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     background: var(--bg);
-    color: #222;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
   }
   .app {
     display: grid;
-    grid-template-columns: 360px 1fr;
+    grid-template-columns: 380px 1fr;
     min-height: 100vh;
   }
   .panel {
-    background: #fff;
+    background: var(--surface);
     border-right: 1px solid var(--border);
-    padding: 20px;
     overflow-y: auto;
     max-height: 100vh;
   }
-  .preview {
-    padding: 20px;
+  .panel::-webkit-scrollbar { width: 8px; }
+  .panel::-webkit-scrollbar-track { background: transparent; }
+  .panel::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+  .brand {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand h1 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+  }
+  .brand .tagline {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .stage {
+    padding: 32px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    gap: 12px;
+    gap: 16px;
+    overflow-y: auto;
+    max-height: 100vh;
   }
-  h1 {
-    font-size: 16px;
-    margin: 0 0 16px 0;
-    padding-bottom: 12px;
+  .canvas-wrap {
+    background:
+      linear-gradient(45deg, #efefef 25%, transparent 25%),
+      linear-gradient(-45deg, #efefef 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #efefef 75%),
+      linear-gradient(-45deg, transparent 75%, #efefef 75%);
+    background-size: 24px 24px;
+    background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.05);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .canvas-wrap svg { display: block; max-width: 100%; max-height: calc(100vh - 140px); }
+  .stage-meta {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* Section */
+  .section {
+    padding: 18px 24px;
     border-bottom: 1px solid var(--border);
   }
-  .row { margin-bottom: var(--gap); }
-  .row label {
-    display: block;
+  .section:last-of-type { border-bottom: 0; }
+  .section-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+  .section-label .badge {
+    font-weight: 500;
+    color: var(--subtle);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 11px;
+  }
+
+  /* Form rows */
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .field-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     font-size: 12px;
     color: var(--muted);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
-  .row input[type="text"],
-  .row input[type="number"],
-  .row select {
-    width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    font-size: 14px;
-    font-family: inherit;
+  .field-label .value {
+    color: var(--text);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
   }
-  .row input[type="color"] {
-    width: 60px;
-    height: 32px;
-    padding: 2px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    cursor: pointer;
-    vertical-align: middle;
-  }
-  .row .inline {
+  .row-inline {
     display: flex;
     gap: 8px;
     align-items: center;
   }
-  .row .inline input[type="text"] {
-    flex: 1;
+  .row-inline > input[type="text"],
+  .row-inline > input[type="number"],
+  .row-inline > select { flex: 1; }
+
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    transition: border-color var(--t), box-shadow var(--t);
   }
-  .lines-list .line-row {
+  input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+    outline: 0;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+  }
+  input[type="number"] { width: 72px; }
+  input[type="color"] {
+    width: 32px;
+    height: 32px;
+    padding: 2px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    cursor: pointer;
+    background: var(--surface);
+  }
+  input[type="file"] { font-size: 12px; }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--border-strong);
+    border-radius: 999px;
+    outline: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform var(--t);
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: 0;
+    cursor: pointer;
+  }
+
+  /* Buttons */
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    transition: all var(--t);
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: white;
+    padding: 8px 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-ghost {
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    padding: 7px 12px;
+    border-radius: var(--radius);
+    font-size: 12px;
+  }
+  .btn-ghost:hover { background: var(--hover); border-color: var(--accent); }
+  .btn-danger {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--muted);
+    padding: 0;
+    width: 28px; height: 28px;
+    border-radius: var(--radius);
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-danger:hover:not(:disabled) {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .btn-danger:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Chips (for canvas size, alignment, bg-mode) */
+  .chips {
+    display: flex;
+    gap: 4px;
+    background: var(--hover);
+    padding: 3px;
+    border-radius: var(--radius);
+  }
+  .chips button {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  .chips button:hover { color: var(--text); }
+  .chips button.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  /* Preset grid */
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .preset-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 0;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color var(--t), transform var(--t);
+  }
+  .preset-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .preset-card.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.08);
+  }
+  .preset-card svg { display: block; width: 100%; height: 56px; }
+  .preset-card .preset-name {
+    padding: 4px 0 5px;
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  /* Lines */
+  .line-row {
     display: flex;
     gap: 6px;
     align-items: center;
     margin-bottom: 6px;
   }
-  .lines-list .line-row input { flex: 1; }
-  .lines-list .line-row button {
-    width: 28px;
-    height: 32px;
-    border: 1px solid var(--border);
-    background: #fafafa;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    color: #666;
+  .line-row .text { flex: 1; }
+  .line-row input[type="color"] {
+    width: 28px; height: 28px;
   }
-  .lines-list .line-row button:hover { background: #f0f0f0; }
-  .add-line {
-    width: 100%;
-    padding: 8px;
-    border: 1px dashed var(--border);
-    background: #fafafa;
-    border-radius: 4px;
-    cursor: pointer;
-    color: var(--muted);
+  .line-row .line-color-toggle {
+    width: 28px; height: 28px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--subtle);
+    border-radius: var(--radius);
+    font-size: 11px;
+    padding: 0;
+    line-height: 1;
+  }
+  .line-row .line-color-toggle.on {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  /* Toggles */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
     font-size: 13px;
   }
-  .add-line:hover { background: #f0f0f0; }
-  .add-line:disabled { opacity: 0.4; cursor: not-allowed; }
-  .actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-  }
-  .actions button {
-    flex: 1;
-    padding: 10px;
+  .switch {
+    position: relative;
+    width: 32px; height: 18px;
+    background: var(--border-strong);
+    border-radius: 999px;
     border: 0;
-    background: #222;
-    color: #fff;
-    border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
+    padding: 0;
+    transition: background var(--t);
   }
-  .actions button:hover { background: #000; }
-  .actions button.secondary {
-    background: #fff;
-    color: #222;
-    border: 1px solid var(--border);
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 14px; height: 14px;
+    background: white;
+    border-radius: 50%;
+    transition: transform var(--t);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
-  .actions button.secondary:hover { background: #f0f0f0; }
-  #stage {
-    width: 100%;
-    max-width: 1200px;
-    aspect-ratio: 16 / 9;
-    background: #000;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-  }
-  #stage svg { width: 100%; height: 100%; display: block; }
-  .meta {
-    font-size: 12px;
-    color: var(--muted);
-    text-align: center;
-  }
+  .switch.on { background: var(--accent); }
+  .switch.on::after { transform: translateX(14px); }
+
+  /* Hint */
   .hint {
     font-size: 11px;
-    color: var(--muted);
+    color: var(--subtle);
     margin-top: 4px;
     line-height: 1.5;
   }
-  .credit {
-    margin-top: 24px;
-    padding-top: 16px;
+
+  /* Export bar */
+  .export-bar {
+    padding: 16px 24px 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    background: var(--surface);
+    position: sticky;
+    bottom: 0;
     border-top: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--muted);
-    text-align: center;
   }
-  .credit strong { color: #222; }
+  .export-bar button { width: 100%; }
+  .export-bar .full { grid-column: 1 / -1; }
+
+  /* Credit */
+  .credit {
+    text-align: center;
+    padding: 16px 24px 24px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .credit strong { color: var(--text); font-weight: 500; }
   .credit a { color: var(--muted); text-decoration: none; }
-  .credit a:hover { color: #222; text-decoration: underline; }
+  .credit a:hover { color: var(--text); text-decoration: underline; }
+
+  /* Collapsible sub-panel */
+  .sub {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: var(--hover);
+    border-radius: var(--radius);
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .panel { max-height: none; border-right: 0; border-bottom: 1px solid var(--border); }
+    .stage { max-height: none; }
+  }
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="panel">
-    <h1>海报标题生成器</h1>
+  <aside class="panel">
 
-    <div class="row">
-      <label>标题行（2–6 行，自动垂直居中）</label>
-      <div id="lines" class="lines-list"></div>
-      <button id="addLine" class="add-line" type="button">+ 添加一行</button>
-      <div class="hint">提示：用 <code>$文本$</code> 包裹的内容会被识别为股票名占位（视觉上保持原样，方便后期替换样式）。</div>
+    <div class="brand">
+      <h1>头条海报生成器</h1>
+      <p class="tagline">8 套预设 · 4 种尺寸 · 文字效果 · 装饰元素</p>
     </div>
 
-    <div class="row">
-      <label>背景颜色（无图时使用，或作为图片下方底色）</label>
-      <div class="inline">
-        <input id="bgColor" type="color" value="#CC0000" />
-        <input id="bgColorHex" type="text" value="#CC0000" />
+    <!-- Preset gallery -->
+    <section class="section">
+      <div class="section-label">预设主题 <span class="badge" id="activePresetName">头条红</span></div>
+      <div id="presets" class="preset-grid"></div>
+    </section>
+
+    <!-- Canvas size -->
+    <section class="section">
+      <div class="section-label">画布尺寸</div>
+      <div id="sizeChips" class="chips"></div>
+    </section>
+
+    <!-- Title lines -->
+    <section class="section">
+      <div class="section-label">标题文字 <span class="badge" id="lineCountBadge">4 / 6</span></div>
+      <div id="lines"></div>
+      <button id="addLine" class="btn-ghost" type="button" style="width:100%; margin-top:6px;">+ 添加一行（最多 6 行）</button>
+      <div class="hint">每行旁的色块按钮可独立设置该行颜色（默认跟随全局）。</div>
+    </section>
+
+    <!-- Typography -->
+    <section class="section">
+      <div class="section-label">文字样式</div>
+
+      <div class="field">
+        <div class="field-label">字体</div>
+        <select id="fontFamily" title="字体">
+          <option value='"SimHei", "黑体", "Heiti SC", "PingFang SC", sans-serif'>黑体（SimHei）</option>
+          <option value='SimSun, "宋体", "Songti SC", "STSong", serif'>宋体（SimSun）</option>
+          <option value='"Microsoft YaHei", "PingFang SC", sans-serif'>微软雅黑</option>
+          <option value='"KaiTi", "楷体", "STKaiti", serif'>楷体（KaiTi）</option>
+          <option value='"FangSong", "仿宋", serif'>仿宋（FangSong）</option>
+        </select>
       </div>
-    </div>
 
-    <div class="row">
-      <label>背景图片（可选）</label>
-      <div class="inline">
-        <input id="bgImageInput" type="file" accept="image/*" style="flex:1; font-size:12px;" />
-        <button id="bgImageClear" type="button" style="padding:6px 10px; border:1px solid var(--border); background:#fafafa; border-radius:4px; cursor:pointer; font-size:12px;">清除</button>
+      <div class="grid-2">
+        <div class="field">
+          <div class="field-label">字号 <span class="value" id="fontSizeVal">80</span></div>
+          <input id="fontSize" type="range" min="32" max="180" step="1" value="80" title="字号 (px)" />
+        </div>
+        <div class="field">
+          <div class="field-label">行高 <span class="value" id="lineHeightVal">120</span></div>
+          <input id="lineHeight" type="range" min="40" max="240" step="1" value="120" title="行高 (px)" />
+        </div>
       </div>
-      <div class="hint">图片会按 cover 模式铺满 1920×1080。导出 PNG 时图片会一起嵌入。</div>
-    </div>
 
-    <div class="row">
-      <label>背景模糊强度 (px)</label>
-      <div class="inline">
-        <input id="blur" type="range" min="0" max="150" step="1" value="0" title="背景模糊滑块" style="flex:1;" />
-        <input id="blurValue" type="number" min="0" max="300" step="1" value="0" title="背景模糊数值 (px)" style="width:70px;" />
+      <div class="grid-2">
+        <div class="field">
+          <div class="field-label">字重</div>
+          <select id="fontWeight" title="字重">
+            <option value="400">常规</option>
+            <option value="600">中粗</option>
+            <option value="bold" selected>粗体</option>
+            <option value="900">特粗</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label">字距 <span class="value" id="letterSpacingVal">0</span></div>
+          <input id="letterSpacing" type="range" min="-5" max="20" step="0.5" value="0" title="字距 (px)" />
+        </div>
       </div>
-      <div class="hint">滑块到 150；如需更强可在右侧数字框直接填到 300。0 = 不模糊。</div>
-    </div>
 
-    <div class="row">
-      <label>暗化遮罩透明度 <span id="overlayValue" style="color:#222; font-weight:600;">0</span></label>
-      <input id="overlay" type="range" min="0" max="1" step="0.05" value="0" style="width:100%;" />
-      <div class="hint">在图片之上叠一层黑色半透明，让白色文字更清晰。0 = 不叠，1 = 全黑。</div>
-    </div>
-
-    <div class="row">
-      <label>文字颜色</label>
-      <div class="inline">
-        <input id="textColor" type="color" value="#FFFFFF" />
-        <input id="textColorHex" type="text" value="#FFFFFF" />
+      <div class="field">
+        <div class="field-label">对齐方式</div>
+        <div id="alignChips" class="chips">
+          <button type="button" data-align="start">左</button>
+          <button type="button" data-align="middle" class="active">中</button>
+          <button type="button" data-align="end">右</button>
+        </div>
       </div>
-    </div>
 
-    <div class="row">
-      <label>字号 (px)</label>
-      <input id="fontSize" type="number" value="80" min="20" max="200" step="2" />
-    </div>
+      <div class="field">
+        <div class="field-label">全局文字颜色</div>
+        <div class="row-inline">
+          <input id="textColor" type="color" value="#FFFFFF" title="文字颜色取色器" />
+          <input id="textColorHex" type="text" value="#FFFFFF" title="文字颜色 Hex" placeholder="#FFFFFF" />
+        </div>
+      </div>
+    </section>
 
-    <div class="row">
-      <label>行高 (px)</label>
-      <input id="lineHeight" type="number" value="120" min="40" max="300" step="2" />
-    </div>
+    <!-- Background -->
+    <section class="section">
+      <div class="section-label">背景</div>
 
-    <div class="row">
-      <label>字体</label>
-      <select id="fontFamily">
-        <option value='"SimHei", "黑体", "Heiti SC", "PingFang SC", sans-serif' selected>黑体（SimHei）</option>
-        <option value='SimSun, "宋体", "Songti SC", "STSong", serif'>宋体（SimSun）</option>
-        <option value='"Microsoft YaHei", "PingFang SC", sans-serif'>微软雅黑</option>
-        <option value='"KaiTi", "楷体", "STKaiti", serif'>楷体（KaiTi）</option>
-        <option value='"FangSong", "仿宋", serif'>仿宋（FangSong）</option>
-      </select>
-    </div>
+      <div class="field">
+        <div id="bgModeChips" class="chips">
+          <button type="button" data-bgmode="solid" class="active">纯色</button>
+          <button type="button" data-bgmode="linear">渐变</button>
+          <button type="button" data-bgmode="image">图片</button>
+        </div>
+      </div>
 
-    <div class="row">
-      <label>字重</label>
-      <select id="fontWeight">
-        <option value="bold" selected>粗体</option>
-        <option value="normal">常规</option>
-        <option value="900">特粗</option>
-      </select>
-    </div>
+      <!-- Solid -->
+      <div id="bgSolidPanel">
+        <div class="field">
+          <div class="field-label">底色</div>
+          <div class="row-inline">
+            <input id="bgColor" type="color" value="#CC0000" title="背景颜色取色器" />
+            <input id="bgColorHex" type="text" value="#CC0000" title="背景颜色 Hex" placeholder="#CC0000" />
+          </div>
+        </div>
+      </div>
 
-    <div class="actions">
-      <button id="exportSvg" type="button">导出 SVG</button>
-      <button id="exportPng" type="button">导出 PNG</button>
-    </div>
-    <div class="actions" style="margin-top: 8px; padding-top: 0; border: 0;">
-      <button id="copySvg" class="secondary" type="button">复制 SVG 代码</button>
+      <!-- Linear gradient -->
+      <div id="bgLinearPanel" class="hidden">
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">起始色</div>
+            <div class="row-inline">
+              <input id="gradStart" type="color" value="#CC0000" title="渐变起始色取色器" />
+              <input id="gradStartHex" type="text" value="#CC0000" title="渐变起始色 Hex" placeholder="#CC0000" />
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label">结束色</div>
+            <div class="row-inline">
+              <input id="gradEnd" type="color" value="#330000" title="渐变结束色取色器" />
+              <input id="gradEndHex" type="text" value="#330000" title="渐变结束色 Hex" placeholder="#330000" />
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">角度 <span class="value" id="gradAngleVal">135°</span></div>
+          <input id="gradAngle" type="range" min="0" max="360" step="5" value="135" title="渐变角度" />
+        </div>
+      </div>
+
+      <!-- Image -->
+      <div id="bgImagePanel" class="hidden">
+        <div class="field">
+          <div class="row-inline">
+            <input id="bgImageInput" type="file" accept="image/*" title="选择背景图片" />
+            <button id="bgImageClear" class="btn-ghost" type="button">清除</button>
+          </div>
+          <div class="hint">cover 模式铺满；导出 PNG 时图片自动嵌入。</div>
+        </div>
+        <div class="field">
+          <div class="field-label">模糊 <span class="value" id="blurVal">0 px</span></div>
+          <div class="row-inline">
+            <input id="blur" type="range" min="0" max="150" step="1" value="0" title="模糊滑块 (px)" />
+            <input id="blurNum" type="number" min="0" max="300" step="1" value="0" title="模糊数值 (px)" />
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">暗化遮罩 <span class="value" id="overlayVal">0</span></div>
+          <input id="overlay" type="range" min="0" max="1" step="0.05" value="0" title="暗化遮罩透明度" />
+        </div>
+      </div>
+
+      <div class="field" style="margin-top: 14px;">
+        <div class="field-label">暗角 vignette <span class="value" id="vignetteVal">0</span></div>
+        <input id="vignette" type="range" min="0" max="1" step="0.05" value="0" title="暗角强度" />
+      </div>
+
+      <div class="field">
+        <div class="field-label">噪点纹理 <span class="value" id="noiseVal">0</span></div>
+        <input id="noise" type="range" min="0" max="0.5" step="0.01" value="0" title="噪点纹理强度" />
+      </div>
+    </section>
+
+    <!-- Text effects -->
+    <section class="section">
+      <div class="section-label">文字效果</div>
+
+      <div class="toggle-row">
+        <span>文字阴影</span>
+        <button id="shadowToggle" class="switch" type="button" title="启用文字阴影" aria-label="启用文字阴影"></button>
+      </div>
+      <div id="shadowPanel" class="sub hidden">
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">颜色</div>
+            <input id="shadowColor" type="color" value="#000000" />
+          </div>
+          <div class="field">
+            <div class="field-label">距离 <span class="value" id="shadowOffsetVal">4</span></div>
+            <input id="shadowOffset" type="range" min="0" max="30" step="1" value="4" />
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">虚化 <span class="value" id="shadowBlurVal">8</span></div>
+          <input id="shadowBlur" type="range" min="0" max="40" step="1" value="8" />
+        </div>
+      </div>
+
+      <div class="toggle-row" style="margin-top: 8px;">
+        <span>文字描边</span>
+        <button id="strokeToggle" class="switch" type="button" title="启用文字描边" aria-label="启用文字描边"></button>
+      </div>
+      <div id="strokePanel" class="sub hidden">
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">颜色</div>
+            <input id="strokeColor" type="color" value="#000000" />
+          </div>
+          <div class="field">
+            <div class="field-label">粗细 <span class="value" id="strokeWidthVal">4</span></div>
+            <input id="strokeWidth" type="range" min="1" max="20" step="0.5" value="4" />
+          </div>
+        </div>
+        <div class="hint">描边在背景图/复杂底色上更易读。</div>
+      </div>
+    </section>
+
+    <!-- Decorative elements -->
+    <section class="section">
+      <div class="section-label">装饰元素</div>
+
+      <div class="toggle-row">
+        <span>顶部色块</span>
+        <button id="topBarToggle" class="switch" type="button" title="启用顶部色块" aria-label="启用顶部色块"></button>
+      </div>
+      <div id="topBarPanel" class="sub hidden">
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">颜色</div>
+            <input id="topBarColor" type="color" value="#000000" />
+          </div>
+          <div class="field">
+            <div class="field-label">高度 <span class="value" id="topBarHeightVal">40</span></div>
+            <input id="topBarHeight" type="range" min="4" max="200" step="1" value="40" />
+          </div>
+        </div>
+      </div>
+
+      <div class="toggle-row" style="margin-top: 8px;">
+        <span>底部色块</span>
+        <button id="bottomBarToggle" class="switch" type="button" title="启用底部色块" aria-label="启用底部色块"></button>
+      </div>
+      <div id="bottomBarPanel" class="sub hidden">
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">颜色</div>
+            <input id="bottomBarColor" type="color" value="#000000" />
+          </div>
+          <div class="field">
+            <div class="field-label">高度 <span class="value" id="bottomBarHeightVal">40</span></div>
+            <input id="bottomBarHeight" type="range" min="4" max="200" step="1" value="40" />
+          </div>
+        </div>
+      </div>
+
+      <div class="toggle-row" style="margin-top: 8px;">
+        <span>巨型引号装饰</span>
+        <button id="quoteToggle" class="switch" type="button" title="启用巨型引号装饰" aria-label="启用巨型引号装饰"></button>
+      </div>
+      <div id="quotePanel" class="sub hidden">
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">颜色</div>
+            <input id="quoteColor" type="color" value="#FFFFFF" />
+          </div>
+          <div class="field">
+            <div class="field-label">透明度 <span class="value" id="quoteOpacityVal">0.15</span></div>
+            <input id="quoteOpacity" type="range" min="0.05" max="1" step="0.05" value="0.15" />
+          </div>
+        </div>
+      </div>
+
+      <div class="toggle-row" style="margin-top: 8px;">
+        <span>署名行 footer</span>
+        <button id="footerToggle" class="switch" type="button" title="启用底部署名行" aria-label="启用底部署名行"></button>
+      </div>
+      <div id="footerPanel" class="sub hidden">
+        <div class="field">
+          <input id="footerText" type="text" placeholder="例：Mac Jiang · 2026.05" value="" />
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">颜色</div>
+            <input id="footerColor" type="color" value="#FFFFFF" />
+          </div>
+          <div class="field">
+            <div class="field-label">字号 <span class="value" id="footerSizeVal">28</span></div>
+            <input id="footerSize" type="range" min="14" max="80" step="1" value="28" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Export -->
+    <div class="export-bar">
+      <button id="exportPng" type="button" class="btn">下载 PNG</button>
+      <button id="exportSvg" type="button" class="btn">下载 SVG</button>
+      <button id="copySvg" class="btn-ghost full" type="button">复制 SVG 代码</button>
     </div>
 
     <div class="credit">
       by <strong>Mac Jiang</strong> · <a href="https://github.com/ShepherdLoveYou/titleGenerator" target="_blank" rel="noopener">GitHub</a>
     </div>
-  </div>
+  </aside>
 
-  <div class="preview">
-    <div id="stage"></div>
-    <div class="meta">实际输出尺寸 1920 × 1080</div>
-  </div>
+  <main class="stage">
+    <div class="canvas-wrap"><div id="canvas"></div></div>
+    <div class="stage-meta" id="stageMeta">1920 × 1080</div>
+  </main>
 </div>
 
 <script>
 (function () {
-  const W = 1920, H = 1080;
-  const defaultLines = [
-    "$超威半导体(AMD)$:",
-    "当所有人都相信它会成为",
-    "“下个英伟达”时，",
-    "我选择不投"
-  ];
+  /* ============================================================ */
+  /* CONSTANTS                                                    */
+  /* ============================================================ */
 
-  const els = {
-    lines: document.getElementById('lines'),
-    addLine: document.getElementById('addLine'),
-    bgColor: document.getElementById('bgColor'),
-    bgColorHex: document.getElementById('bgColorHex'),
-    bgImageInput: document.getElementById('bgImageInput'),
-    bgImageClear: document.getElementById('bgImageClear'),
-    blur: document.getElementById('blur'),
-    blurValue: document.getElementById('blurValue'),
-    overlay: document.getElementById('overlay'),
-    overlayValue: document.getElementById('overlayValue'),
-    textColor: document.getElementById('textColor'),
-    textColorHex: document.getElementById('textColorHex'),
-    fontSize: document.getElementById('fontSize'),
-    lineHeight: document.getElementById('lineHeight'),
-    fontFamily: document.getElementById('fontFamily'),
-    fontWeight: document.getElementById('fontWeight'),
-    stage: document.getElementById('stage'),
-    exportSvg: document.getElementById('exportSvg'),
-    exportPng: document.getElementById('exportPng'),
-    copySvg: document.getElementById('copySvg'),
+  const SIZES = {
+    '16:9': { w: 1920, h: 1080, label: '16:9 头条' },
+    '1:1':  { w: 1080, h: 1080, label: '1:1 朋友圈' },
+    '4:5':  { w: 1080, h: 1350, label: '4:5 小红书' },
+    '9:16': { w: 1080, h: 1920, label: '9:16 Stories' },
   };
 
-  let lines = defaultLines.slice();
-  let bgImageDataUrl = null;
+  const PRESETS = [
+    {
+      id: 'classic-red',
+      name: '头条红',
+      patch: {
+        bg: { mode: 'solid', solid: '#CC0000' },
+        text: { color: '#FFFFFF', fontFamily: '"SimHei", "黑体", sans-serif', fontWeight: 'bold' },
+        effects: { shadow: false, stroke: false, vignette: 0, noise: 0 },
+        decor: { topBar: false, bottomBar: false, quote: false, footer: false },
+      }
+    },
+    {
+      id: 'alarm-black',
+      name: '报警黑',
+      patch: {
+        bg: { mode: 'solid', solid: '#0F0F0F' },
+        text: { color: '#FFE600', fontFamily: '"SimHei", "黑体", sans-serif', fontWeight: '900' },
+        effects: { shadow: false, stroke: false, vignette: 0, noise: 0 },
+        decor: { topBar: { on: true, color: '#FFE600', height: 14 }, bottomBar: { on: true, color: '#FFE600', height: 14 }, quote: false, footer: false },
+      }
+    },
+    {
+      id: 'cream-vintage',
+      name: '乳黄复古',
+      patch: {
+        bg: { mode: 'solid', solid: '#F4EAD5' },
+        text: { color: '#2C2018', fontFamily: 'SimSun, "宋体", serif', fontWeight: 'bold' },
+        effects: { shadow: false, stroke: false, vignette: 0.25, noise: 0.08 },
+        decor: { topBar: { on: true, color: '#2C2018', height: 8 }, bottomBar: { on: true, color: '#2C2018', height: 8 }, quote: false, footer: false },
+      }
+    },
+    {
+      id: 'minimal-white',
+      name: '极简白',
+      patch: {
+        bg: { mode: 'solid', solid: '#FFFFFF' },
+        text: { color: '#0A0A0A', fontFamily: '"SimHei", "黑体", sans-serif', fontWeight: 'bold' },
+        effects: { shadow: false, stroke: false, vignette: 0, noise: 0 },
+        decor: { topBar: false, bottomBar: false, quote: { on: true, color: '#0A0A0A', opacity: 0.08 }, footer: false },
+      }
+    },
+    {
+      id: 'midnight-blue',
+      name: '暗夜蓝',
+      patch: {
+        bg: { mode: 'linear', gradStart: '#0A1929', gradEnd: '#1E3A5F', gradAngle: 135 },
+        text: { color: '#E8F4FF', fontFamily: '"SimHei", "黑体", sans-serif', fontWeight: 'bold' },
+        effects: { shadow: { on: true, color: '#000', offset: 4, blur: 12 }, stroke: false, vignette: 0.3, noise: 0 },
+        decor: { topBar: false, bottomBar: false, quote: false, footer: false },
+      }
+    },
+    {
+      id: 'dopamine-green',
+      name: '多巴胺绿',
+      patch: {
+        bg: { mode: 'solid', solid: '#00B86B' },
+        text: { color: '#FFF7E6', fontFamily: '"SimHei", "黑体", sans-serif', fontWeight: '900' },
+        effects: { shadow: false, stroke: false, vignette: 0, noise: 0 },
+        decor: { topBar: false, bottomBar: false, quote: { on: true, color: '#FFF7E6', opacity: 0.15 }, footer: false },
+      }
+    },
+    {
+      id: 'finance-brown',
+      name: '金融棕',
+      patch: {
+        bg: { mode: 'linear', gradStart: '#3D2817', gradEnd: '#1A0F08', gradAngle: 180 },
+        text: { color: '#D4AF37', fontFamily: 'SimSun, "宋体", serif', fontWeight: 'bold' },
+        effects: { shadow: false, stroke: false, vignette: 0.4, noise: 0.04 },
+        decor: { topBar: { on: true, color: '#D4AF37', height: 6 }, bottomBar: { on: true, color: '#D4AF37', height: 6 }, quote: false, footer: false },
+      }
+    },
+    {
+      id: 'cyber-purple',
+      name: '赛博紫',
+      patch: {
+        bg: { mode: 'linear', gradStart: '#7C3AED', gradEnd: '#EC4899', gradAngle: 135 },
+        text: { color: '#FFFFFF', fontFamily: '"SimHei", "黑体", sans-serif', fontWeight: '900' },
+        effects: { shadow: { on: true, color: '#3D1A6B', offset: 6, blur: 16 }, stroke: false, vignette: 0, noise: 0.05 },
+        decor: { topBar: false, bottomBar: false, quote: false, footer: false },
+      }
+    },
+  ];
+
+  /* ============================================================ */
+  /* STATE                                                        */
+  /* ============================================================ */
+
+  const state = {
+    size: '16:9',
+    activePreset: 'classic-red',
+    lines: [
+      { text: '$超威半导体(AMD)$:', color: null },
+      { text: '当所有人都相信它会成为', color: null },
+      { text: '"下个英伟达"时，', color: null },
+      { text: '我选择不投', color: null },
+    ],
+    text: {
+      color: '#FFFFFF',
+      fontSize: 80,
+      lineHeight: 120,
+      fontFamily: '"SimHei", "黑体", "Heiti SC", "PingFang SC", sans-serif',
+      fontWeight: 'bold',
+      align: 'middle',
+      letterSpacing: 0,
+    },
+    bg: {
+      mode: 'solid',
+      solid: '#CC0000',
+      gradStart: '#CC0000',
+      gradEnd: '#330000',
+      gradAngle: 135,
+      image: null,
+      blur: 0,
+      overlay: 0,
+    },
+    effects: {
+      shadow: false,
+      shadowColor: '#000000',
+      shadowOffset: 4,
+      shadowBlur: 8,
+      stroke: false,
+      strokeColor: '#000000',
+      strokeWidth: 4,
+      vignette: 0,
+      noise: 0,
+    },
+    decor: {
+      topBar: false, topBarColor: '#000000', topBarHeight: 40,
+      bottomBar: false, bottomBarColor: '#000000', bottomBarHeight: 40,
+      quote: false, quoteColor: '#FFFFFF', quoteOpacity: 0.15,
+      footer: false, footerText: '', footerColor: '#FFFFFF', footerSize: 28,
+    },
+  };
+
+  /* ============================================================ */
+  /* DOM                                                          */
+  /* ============================================================ */
+
+  const $ = id => document.getElementById(id);
+  const els = {
+    presets: $('presets'),
+    activePresetName: $('activePresetName'),
+    sizeChips: $('sizeChips'),
+    lines: $('lines'),
+    addLine: $('addLine'),
+    lineCountBadge: $('lineCountBadge'),
+
+    fontFamily: $('fontFamily'),
+    fontSize: $('fontSize'), fontSizeVal: $('fontSizeVal'),
+    lineHeight: $('lineHeight'), lineHeightVal: $('lineHeightVal'),
+    fontWeight: $('fontWeight'),
+    letterSpacing: $('letterSpacing'), letterSpacingVal: $('letterSpacingVal'),
+    alignChips: $('alignChips'),
+    textColor: $('textColor'), textColorHex: $('textColorHex'),
+
+    bgModeChips: $('bgModeChips'),
+    bgSolidPanel: $('bgSolidPanel'), bgLinearPanel: $('bgLinearPanel'), bgImagePanel: $('bgImagePanel'),
+    bgColor: $('bgColor'), bgColorHex: $('bgColorHex'),
+    gradStart: $('gradStart'), gradStartHex: $('gradStartHex'),
+    gradEnd: $('gradEnd'), gradEndHex: $('gradEndHex'),
+    gradAngle: $('gradAngle'), gradAngleVal: $('gradAngleVal'),
+    bgImageInput: $('bgImageInput'), bgImageClear: $('bgImageClear'),
+    blur: $('blur'), blurNum: $('blurNum'), blurVal: $('blurVal'),
+    overlay: $('overlay'), overlayVal: $('overlayVal'),
+    vignette: $('vignette'), vignetteVal: $('vignetteVal'),
+    noise: $('noise'), noiseVal: $('noiseVal'),
+
+    shadowToggle: $('shadowToggle'), shadowPanel: $('shadowPanel'),
+    shadowColor: $('shadowColor'),
+    shadowOffset: $('shadowOffset'), shadowOffsetVal: $('shadowOffsetVal'),
+    shadowBlur: $('shadowBlur'), shadowBlurVal: $('shadowBlurVal'),
+    strokeToggle: $('strokeToggle'), strokePanel: $('strokePanel'),
+    strokeColor: $('strokeColor'),
+    strokeWidth: $('strokeWidth'), strokeWidthVal: $('strokeWidthVal'),
+
+    topBarToggle: $('topBarToggle'), topBarPanel: $('topBarPanel'),
+    topBarColor: $('topBarColor'), topBarHeight: $('topBarHeight'), topBarHeightVal: $('topBarHeightVal'),
+    bottomBarToggle: $('bottomBarToggle'), bottomBarPanel: $('bottomBarPanel'),
+    bottomBarColor: $('bottomBarColor'), bottomBarHeight: $('bottomBarHeight'), bottomBarHeightVal: $('bottomBarHeightVal'),
+    quoteToggle: $('quoteToggle'), quotePanel: $('quotePanel'),
+    quoteColor: $('quoteColor'), quoteOpacity: $('quoteOpacity'), quoteOpacityVal: $('quoteOpacityVal'),
+    footerToggle: $('footerToggle'), footerPanel: $('footerPanel'),
+    footerText: $('footerText'), footerColor: $('footerColor'),
+    footerSize: $('footerSize'), footerSizeVal: $('footerSizeVal'),
+
+    canvas: $('canvas'), stageMeta: $('stageMeta'),
+    exportPng: $('exportPng'), exportSvg: $('exportSvg'), copySvg: $('copySvg'),
+  };
+
+  /* ============================================================ */
+  /* HELPERS                                                      */
+  /* ============================================================ */
+
+  function escapeXml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  }
+  function ts() {
+    const d = new Date(), pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  }
+  function downloadBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  }
+  function deepMerge(target, src) {
+    for (const k in src) {
+      if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k])) {
+        if (typeof target[k] !== 'object' || target[k] === null) target[k] = {};
+        deepMerge(target[k], src[k]);
+      } else {
+        target[k] = src[k];
+      }
+    }
+    return target;
+  }
+
+  /* ============================================================ */
+  /* SVG BUILDER                                                  */
+  /* ============================================================ */
+
+  function buildSvg() {
+    const { w: W, h: H } = SIZES[state.size];
+    const cx = W / 2, cy = H / 2;
+    const t = state.text, b = state.bg, e = state.effects, d = state.decor;
+
+    const align = t.align;
+    const tx = align === 'start' ? Math.round(W * 0.08)
+             : align === 'end'   ? Math.round(W * 0.92)
+                                  : cx;
+
+    /* defs */
+    let defs = '';
+    if (b.mode === 'linear') {
+      const a = (b.gradAngle * Math.PI) / 180;
+      const x1 = (50 - Math.cos(a) * 50).toFixed(2);
+      const y1 = (50 - Math.sin(a) * 50).toFixed(2);
+      const x2 = (50 + Math.cos(a) * 50).toFixed(2);
+      const y2 = (50 + Math.sin(a) * 50).toFixed(2);
+      defs += `<linearGradient id="bgGrad" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%"><stop offset="0%" stop-color="${b.gradStart}"/><stop offset="100%" stop-color="${b.gradEnd}"/></linearGradient>`;
+    }
+    if (b.mode === 'image' && b.image && b.blur > 0) {
+      defs += `<filter id="bgBlur"><feGaussianBlur stdDeviation="${b.blur}"/></filter>`;
+    }
+    if (e.shadow) {
+      defs += `<filter id="textShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="${e.shadowOffset}" dy="${e.shadowOffset}" stdDeviation="${e.shadowBlur / 2}" flood-color="${e.shadowColor}" flood-opacity="1"/></filter>`;
+    }
+    if (e.vignette > 0) {
+      defs += `<radialGradient id="vignette" cx="50%" cy="50%" r="75%"><stop offset="50%" stop-color="black" stop-opacity="0"/><stop offset="100%" stop-color="black" stop-opacity="${e.vignette}"/></radialGradient>`;
+    }
+    if (e.noise > 0) {
+      defs += `<filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 ${e.noise} 0"/></filter>`;
+    }
+
+    /* background */
+    let bg = '';
+    if (b.mode === 'solid') {
+      bg += `<rect width="${W}" height="${H}" fill="${b.solid}"/>`;
+    } else if (b.mode === 'linear') {
+      bg += `<rect width="${W}" height="${H}" fill="url(#bgGrad)"/>`;
+    } else if (b.mode === 'image') {
+      bg += `<rect width="${W}" height="${H}" fill="${b.solid}"/>`;
+      if (b.image) {
+        const pad = Math.ceil(b.blur * 4) + 20;
+        const filter = b.blur > 0 ? ' filter="url(#bgBlur)"' : '';
+        bg += `<image href="${b.image}" x="${-pad}" y="${-pad}" width="${W + pad * 2}" height="${H + pad * 2}" preserveAspectRatio="xMidYMid slice"${filter}/>`;
+      }
+      if (b.overlay > 0) {
+        bg += `<rect width="${W}" height="${H}" fill="black" opacity="${b.overlay}"/>`;
+      }
+    }
+
+    /* noise (under text, over background) */
+    let noiseLayer = '';
+    if (e.noise > 0) {
+      noiseLayer = `<rect width="${W}" height="${H}" filter="url(#noise)"/>`;
+    }
+
+    /* large quote decoration */
+    let quoteLayer = '';
+    if (d.quote) {
+      const qSize = Math.max(W, H) * 0.7;
+      quoteLayer = `<text x="${W * 0.06}" y="${H * 0.42}" fill="${d.quoteColor}" opacity="${d.quoteOpacity}" font-size="${qSize}" font-family='Georgia, serif' font-weight="900" text-anchor="start" dominant-baseline="alphabetic">"</text>`;
+    }
+
+    /* top / bottom bars */
+    let bars = '';
+    if (d.topBar) {
+      bars += `<rect x="0" y="0" width="${W}" height="${d.topBarHeight}" fill="${d.topBarColor}"/>`;
+    }
+    if (d.bottomBar) {
+      bars += `<rect x="0" y="${H - d.bottomBarHeight}" width="${W}" height="${d.bottomBarHeight}" fill="${d.bottomBarColor}"/>`;
+    }
+
+    /* vignette (above bars, below text) */
+    let vignetteLayer = '';
+    if (e.vignette > 0) {
+      vignetteLayer = `<rect width="${W}" height="${H}" fill="url(#vignette)"/>`;
+    }
+
+    /* text lines */
+    const n = state.lines.length;
+    const filterAttr = e.shadow ? ' filter="url(#textShadow)"' : '';
+    const strokeAttr = e.stroke
+      ? ` stroke="${e.strokeColor}" stroke-width="${e.strokeWidth}" paint-order="stroke fill"`
+      : '';
+
+    const texts = state.lines.map((line, i) => {
+      const yCenter = cy + (i - (n - 1) / 2) * t.lineHeight;
+      const fill = line.color || t.color;
+      return `<text x="${tx}" y="${yCenter}" fill="${fill}" font-size="${t.fontSize}" font-weight="${t.fontWeight}" font-family='${t.fontFamily}' text-anchor="${align}" dominant-baseline="central" letter-spacing="${t.letterSpacing}"${filterAttr}${strokeAttr}>${escapeXml(line.text)}</text>`;
+    }).join('');
+
+    /* footer line */
+    let footerLayer = '';
+    if (d.footer && d.footerText) {
+      const fy = H - Math.max(d.bottomBarHeight + 10, 30);
+      footerLayer = `<text x="${cx}" y="${fy}" fill="${d.footerColor}" font-size="${d.footerSize}" font-family='${t.fontFamily}' text-anchor="middle" dominant-baseline="alphabetic" opacity="0.85">${escapeXml(d.footerText)}</text>`;
+    }
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${defs ? `<defs>${defs}</defs>` : ''}${bg}${quoteLayer}${noiseLayer}${bars}${vignetteLayer}${texts}${footerLayer}</svg>`;
+  }
+
+  /* ============================================================ */
+  /* RENDER                                                       */
+  /* ============================================================ */
+
+  function render() {
+    els.canvas.innerHTML = buildSvg();
+    const { w, h } = SIZES[state.size];
+    els.stageMeta.textContent = `${w} × ${h}`;
+  }
+
+  /* ============================================================ */
+  /* PRESETS                                                      */
+  /* ============================================================ */
+
+  function presetThumbSvg(p) {
+    /* tiny visual representation of the preset */
+    const patch = p.patch;
+    const bg = patch.bg.mode === 'linear'
+      ? `<defs><linearGradient id="g${p.id}" x1="0" y1="0" x2="100%" y2="100%"><stop offset="0%" stop-color="${patch.bg.gradStart}"/><stop offset="100%" stop-color="${patch.bg.gradEnd}"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g${p.id})"/>`
+      : `<rect width="100%" height="100%" fill="${patch.bg.solid}"/>`;
+    const txt = patch.text.color;
+    const tb = patch.decor && patch.decor.topBar && patch.decor.topBar.on
+      ? `<rect x="0" y="0" width="100" height="4" fill="${patch.decor.topBar.color}"/>` : '';
+    const bb = patch.decor && patch.decor.bottomBar && patch.decor.bottomBar.on
+      ? `<rect x="0" y="52" width="100" height="4" fill="${patch.decor.bottomBar.color}"/>` : '';
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 56" preserveAspectRatio="none">${bg}${tb}${bb}<rect x="14" y="20" width="72" height="6" fill="${txt}" opacity="0.95"/><rect x="22" y="32" width="56" height="6" fill="${txt}" opacity="0.95"/></svg>`;
+  }
+
+  function applyPreset(id) {
+    const p = PRESETS.find(x => x.id === id);
+    if (!p) return;
+    state.activePreset = id;
+
+    /* normalize: turn shorthand toggles in patch into full state shape */
+    const patch = JSON.parse(JSON.stringify(p.patch));
+
+    /* bg */
+    if (patch.bg) Object.assign(state.bg, patch.bg);
+    /* text */
+    if (patch.text) Object.assign(state.text, patch.text);
+    /* effects: support shorthand { shadow: false } and { shadow: { on: true, color, offset, blur } } */
+    if (patch.effects) {
+      const ef = patch.effects;
+      if (ef.shadow === false) state.effects.shadow = false;
+      else if (ef.shadow && typeof ef.shadow === 'object') {
+        state.effects.shadow = !!ef.shadow.on;
+        if (ef.shadow.color !== undefined) state.effects.shadowColor = ef.shadow.color;
+        if (ef.shadow.offset !== undefined) state.effects.shadowOffset = ef.shadow.offset;
+        if (ef.shadow.blur !== undefined) state.effects.shadowBlur = ef.shadow.blur;
+      }
+      if (ef.stroke === false) state.effects.stroke = false;
+      else if (ef.stroke && typeof ef.stroke === 'object') {
+        state.effects.stroke = !!ef.stroke.on;
+        if (ef.stroke.color !== undefined) state.effects.strokeColor = ef.stroke.color;
+        if (ef.stroke.width !== undefined) state.effects.strokeWidth = ef.stroke.width;
+      }
+      if (ef.vignette !== undefined) state.effects.vignette = ef.vignette;
+      if (ef.noise !== undefined) state.effects.noise = ef.noise;
+    }
+    /* decor */
+    if (patch.decor) {
+      const dd = patch.decor;
+      function unpack(name, target) {
+        if (dd[name] === false) state.decor[name] = false;
+        else if (dd[name] && typeof dd[name] === 'object') {
+          state.decor[name] = !!dd[name].on;
+          if (dd[name].color !== undefined) state.decor[name + 'Color'] = dd[name].color;
+          if (dd[name].height !== undefined) state.decor[name + 'Height'] = dd[name].height;
+          if (dd[name].opacity !== undefined) state.decor[name + 'Opacity'] = dd[name].opacity;
+        }
+      }
+      unpack('topBar');
+      unpack('bottomBar');
+      unpack('quote');
+      if (dd.footer === false) state.decor.footer = false;
+    }
+
+    /* per-line color reset */
+    state.lines.forEach(l => l.color = null);
+
+    syncControlsToState();
+    render();
+    updatePresetActive();
+  }
+
+  function buildPresetCards() {
+    els.presets.innerHTML = PRESETS.map(p =>
+      `<button class="preset-card" data-preset="${p.id}">
+         ${presetThumbSvg(p)}
+         <div class="preset-name">${p.name}</div>
+       </button>`
+    ).join('');
+    els.presets.querySelectorAll('.preset-card').forEach(card => {
+      card.addEventListener('click', () => applyPreset(card.dataset.preset));
+    });
+  }
+  function updatePresetActive() {
+    els.presets.querySelectorAll('.preset-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.preset === state.activePreset);
+    });
+    const p = PRESETS.find(x => x.id === state.activePreset);
+    if (p) els.activePresetName.textContent = p.name;
+  }
+
+  /* ============================================================ */
+  /* SIZE CHIPS                                                   */
+  /* ============================================================ */
+
+  function buildSizeChips() {
+    els.sizeChips.innerHTML = Object.entries(SIZES).map(([k, v]) =>
+      `<button data-size="${k}"${k === state.size ? ' class="active"' : ''}>${v.label}</button>`
+    ).join('');
+    els.sizeChips.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.size = btn.dataset.size;
+        els.sizeChips.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+        render();
+      });
+    });
+  }
+
+  /* ============================================================ */
+  /* LINES                                                        */
+  /* ============================================================ */
 
   function renderLineInputs() {
     els.lines.innerHTML = '';
-    lines.forEach((text, i) => {
+    state.lines.forEach((line, i) => {
       const row = document.createElement('div');
       row.className = 'line-row';
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.value = text;
-      input.placeholder = `第 ${i + 1} 行`;
-      input.addEventListener('input', () => {
-        lines[i] = input.value;
+
+      const text = document.createElement('input');
+      text.type = 'text';
+      text.value = line.text;
+      text.placeholder = `第 ${i + 1} 行`;
+      text.className = 'text';
+      text.addEventListener('input', () => { state.lines[i].text = text.value; render(); });
+
+      const colorBtn = document.createElement('button');
+      colorBtn.type = 'button';
+      colorBtn.className = 'line-color-toggle' + (line.color ? ' on' : '');
+      colorBtn.textContent = line.color ? '●' : '○';
+      colorBtn.title = line.color ? '关闭独立颜色' : '为此行设置独立颜色';
+      colorBtn.style.color = line.color || '';
+      colorBtn.addEventListener('click', () => {
+        if (state.lines[i].color) {
+          state.lines[i].color = null;
+        } else {
+          state.lines[i].color = state.text.color;
+        }
+        renderLineInputs(); render();
+      });
+
+      const colorPick = document.createElement('input');
+      colorPick.type = 'color';
+      colorPick.value = line.color || state.text.color;
+      colorPick.style.display = line.color ? '' : 'none';
+      colorPick.addEventListener('input', () => {
+        state.lines[i].color = colorPick.value;
+        colorBtn.style.color = colorPick.value;
         render();
       });
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.textContent = '×';
-      removeBtn.title = '删除此行';
-      removeBtn.addEventListener('click', () => {
-        if (lines.length <= 2) return;
-        lines.splice(i, 1);
-        renderLineInputs();
-        render();
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn-danger';
+      remove.textContent = '×';
+      remove.title = '删除此行';
+      remove.disabled = state.lines.length <= 2;
+      remove.addEventListener('click', () => {
+        if (state.lines.length <= 2) return;
+        state.lines.splice(i, 1);
+        renderLineInputs(); render();
       });
-      removeBtn.disabled = lines.length <= 2;
-      row.appendChild(input);
-      row.appendChild(removeBtn);
+
+      row.appendChild(text);
+      row.appendChild(colorBtn);
+      row.appendChild(colorPick);
+      row.appendChild(remove);
       els.lines.appendChild(row);
     });
-    els.addLine.disabled = lines.length >= 6;
+    els.addLine.disabled = state.lines.length >= 6;
+    els.lineCountBadge.textContent = `${state.lines.length} / 6`;
   }
 
-  function escapeXml(s) {
-    return s.replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&apos;');
-  }
+  /* ============================================================ */
+  /* SYNC CONTROLS ← STATE                                        */
+  /* ============================================================ */
 
-  function buildSvg() {
-    const bg = els.bgColor.value;
-    const fg = els.textColor.value;
-    const fs = parseInt(els.fontSize.value, 10) || 80;
-    const lh = parseInt(els.lineHeight.value, 10) || 120;
-    const ff = els.fontFamily.value;
-    const fw = els.fontWeight.value;
-    const blurAmount = parseFloat(els.blur.value) || 0;
-    const overlayOpacity = parseFloat(els.overlay.value) || 0;
-    const cx = W / 2;
-    const cy = H / 2;
-    const n = lines.length;
-
-    const texts = lines.map((line, i) => {
-      const yCenter = cy + (i - (n - 1) / 2) * lh;
-      return `  <text x="${cx}" y="${yCenter}" fill="${fg}" font-size="${fs}" font-weight="${fw}" font-family='${ff}' text-anchor="middle" dominant-baseline="central">${escapeXml(line)}</text>`;
-    }).join('\n');
-
-    let defs = '';
-    let imageLayer = '';
-    if (bgImageDataUrl) {
-      // 模糊会让边缘出现透明带 — 把图片向四周扩展 pad px，刚好被画布裁掉
-      const pad = Math.ceil(blurAmount * 4) + 20;
-      const filterAttr = blurAmount > 0 ? ' filter="url(#bgBlur)"' : '';
-      if (blurAmount > 0) {
-        defs = `  <defs>
-    <filter id="bgBlur" x="0" y="0" width="100%" height="100%">
-      <feGaussianBlur stdDeviation="${blurAmount}" />
-    </filter>
-  </defs>\n`;
-      }
-      imageLayer = `  <image href="${bgImageDataUrl}" x="${-pad}" y="${-pad}" width="${W + pad * 2}" height="${H + pad * 2}" preserveAspectRatio="xMidYMid slice"${filterAttr} />\n`;
+  function syncControlsToState() {
+    /* text */
+    els.fontFamily.value = state.text.fontFamily;
+    if (els.fontFamily.value === '') {
+      /* fallback if state has a value not in dropdown */
+      const opt = document.createElement('option');
+      opt.value = state.text.fontFamily; opt.textContent = state.text.fontFamily;
+      els.fontFamily.appendChild(opt); els.fontFamily.value = state.text.fontFamily;
     }
+    els.fontSize.value = state.text.fontSize; els.fontSizeVal.textContent = state.text.fontSize;
+    els.lineHeight.value = state.text.lineHeight; els.lineHeightVal.textContent = state.text.lineHeight;
+    els.fontWeight.value = state.text.fontWeight;
+    els.letterSpacing.value = state.text.letterSpacing; els.letterSpacingVal.textContent = state.text.letterSpacing;
+    els.textColor.value = state.text.color; els.textColorHex.value = state.text.color;
+    els.alignChips.querySelectorAll('button').forEach(b =>
+      b.classList.toggle('active', b.dataset.align === state.text.align));
 
-    const overlayLayer = overlayOpacity > 0
-      ? `  <rect width="${W}" height="${H}" fill="black" opacity="${overlayOpacity}" />\n`
-      : '';
+    /* bg */
+    els.bgModeChips.querySelectorAll('button').forEach(b =>
+      b.classList.toggle('active', b.dataset.bgmode === state.bg.mode));
+    els.bgSolidPanel.classList.toggle('hidden', state.bg.mode !== 'solid');
+    els.bgLinearPanel.classList.toggle('hidden', state.bg.mode !== 'linear');
+    els.bgImagePanel.classList.toggle('hidden', state.bg.mode !== 'image');
+    els.bgColor.value = state.bg.solid; els.bgColorHex.value = state.bg.solid;
+    els.gradStart.value = state.bg.gradStart; els.gradStartHex.value = state.bg.gradStart;
+    els.gradEnd.value = state.bg.gradEnd; els.gradEndHex.value = state.bg.gradEnd;
+    els.gradAngle.value = state.bg.gradAngle; els.gradAngleVal.textContent = state.bg.gradAngle + '°';
+    els.blur.value = state.bg.blur; els.blurNum.value = state.bg.blur; els.blurVal.textContent = state.bg.blur + ' px';
+    els.overlay.value = state.bg.overlay; els.overlayVal.textContent = parseFloat(state.bg.overlay).toFixed(2);
+    els.vignette.value = state.effects.vignette; els.vignetteVal.textContent = parseFloat(state.effects.vignette).toFixed(2);
+    els.noise.value = state.effects.noise; els.noiseVal.textContent = parseFloat(state.effects.noise).toFixed(2);
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
-${defs}  <rect width="${W}" height="${H}" fill="${bg}" />
-${imageLayer}${overlayLayer}${texts}
-</svg>`;
+    /* effects */
+    els.shadowToggle.classList.toggle('on', state.effects.shadow);
+    els.shadowPanel.classList.toggle('hidden', !state.effects.shadow);
+    els.shadowColor.value = state.effects.shadowColor;
+    els.shadowOffset.value = state.effects.shadowOffset; els.shadowOffsetVal.textContent = state.effects.shadowOffset;
+    els.shadowBlur.value = state.effects.shadowBlur; els.shadowBlurVal.textContent = state.effects.shadowBlur;
+    els.strokeToggle.classList.toggle('on', state.effects.stroke);
+    els.strokePanel.classList.toggle('hidden', !state.effects.stroke);
+    els.strokeColor.value = state.effects.strokeColor;
+    els.strokeWidth.value = state.effects.strokeWidth; els.strokeWidthVal.textContent = state.effects.strokeWidth;
+
+    /* decor */
+    els.topBarToggle.classList.toggle('on', state.decor.topBar);
+    els.topBarPanel.classList.toggle('hidden', !state.decor.topBar);
+    els.topBarColor.value = state.decor.topBarColor;
+    els.topBarHeight.value = state.decor.topBarHeight; els.topBarHeightVal.textContent = state.decor.topBarHeight;
+    els.bottomBarToggle.classList.toggle('on', state.decor.bottomBar);
+    els.bottomBarPanel.classList.toggle('hidden', !state.decor.bottomBar);
+    els.bottomBarColor.value = state.decor.bottomBarColor;
+    els.bottomBarHeight.value = state.decor.bottomBarHeight; els.bottomBarHeightVal.textContent = state.decor.bottomBarHeight;
+    els.quoteToggle.classList.toggle('on', state.decor.quote);
+    els.quotePanel.classList.toggle('hidden', !state.decor.quote);
+    els.quoteColor.value = state.decor.quoteColor;
+    els.quoteOpacity.value = state.decor.quoteOpacity; els.quoteOpacityVal.textContent = parseFloat(state.decor.quoteOpacity).toFixed(2);
+    els.footerToggle.classList.toggle('on', state.decor.footer);
+    els.footerPanel.classList.toggle('hidden', !state.decor.footer);
+    els.footerText.value = state.decor.footerText;
+    els.footerColor.value = state.decor.footerColor;
+    els.footerSize.value = state.decor.footerSize; els.footerSizeVal.textContent = state.decor.footerSize;
   }
 
-  function render() {
-    els.stage.innerHTML = buildSvg();
-  }
+  /* ============================================================ */
+  /* WIRING                                                       */
+  /* ============================================================ */
 
-  function syncColorPair(picker, hex) {
+  function syncColorPair(picker, hex, getter, setter) {
     picker.addEventListener('input', () => {
-      hex.value = picker.value.toUpperCase();
-      render();
+      const v = picker.value.toUpperCase();
+      hex.value = v; setter(v); render();
     });
     hex.addEventListener('input', () => {
       const v = hex.value.trim();
       if (/^#[0-9a-fA-F]{6}$/.test(v)) {
-        picker.value = v;
-        render();
+        picker.value = v; setter(v.toUpperCase()); render();
       }
     });
   }
 
-  function downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 100);
+  function wire() {
+    /* text */
+    els.fontFamily.addEventListener('change', () => { state.text.fontFamily = els.fontFamily.value; render(); });
+    els.fontSize.addEventListener('input', () => { state.text.fontSize = parseInt(els.fontSize.value, 10); els.fontSizeVal.textContent = state.text.fontSize; render(); });
+    els.lineHeight.addEventListener('input', () => { state.text.lineHeight = parseInt(els.lineHeight.value, 10); els.lineHeightVal.textContent = state.text.lineHeight; render(); });
+    els.fontWeight.addEventListener('change', () => { state.text.fontWeight = els.fontWeight.value; render(); });
+    els.letterSpacing.addEventListener('input', () => { state.text.letterSpacing = parseFloat(els.letterSpacing.value); els.letterSpacingVal.textContent = state.text.letterSpacing; render(); });
+    els.alignChips.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.text.align = btn.dataset.align;
+        els.alignChips.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+        render();
+      });
+    });
+    syncColorPair(els.textColor, els.textColorHex,
+      () => state.text.color, v => state.text.color = v);
+
+    /* bg mode chips */
+    els.bgModeChips.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.bg.mode = btn.dataset.bgmode;
+        els.bgModeChips.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+        els.bgSolidPanel.classList.toggle('hidden', state.bg.mode !== 'solid');
+        els.bgLinearPanel.classList.toggle('hidden', state.bg.mode !== 'linear');
+        els.bgImagePanel.classList.toggle('hidden', state.bg.mode !== 'image');
+        render();
+      });
+    });
+    syncColorPair(els.bgColor, els.bgColorHex, () => state.bg.solid, v => state.bg.solid = v);
+    syncColorPair(els.gradStart, els.gradStartHex, () => state.bg.gradStart, v => state.bg.gradStart = v);
+    syncColorPair(els.gradEnd, els.gradEndHex, () => state.bg.gradEnd, v => state.bg.gradEnd = v);
+    els.gradAngle.addEventListener('input', () => { state.bg.gradAngle = parseInt(els.gradAngle.value, 10); els.gradAngleVal.textContent = state.bg.gradAngle + '°'; render(); });
+
+    /* image */
+    els.bgImageInput.addEventListener('change', () => {
+      const f = els.bgImageInput.files && els.bgImageInput.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = e => { state.bg.image = e.target.result; render(); };
+      r.readAsDataURL(f);
+    });
+    els.bgImageClear.addEventListener('click', () => { state.bg.image = null; els.bgImageInput.value = ''; render(); });
+    els.blur.addEventListener('input', () => { state.bg.blur = parseInt(els.blur.value, 10); els.blurNum.value = state.bg.blur; els.blurVal.textContent = state.bg.blur + ' px'; render(); });
+    els.blurNum.addEventListener('input', () => {
+      const v = parseFloat(els.blurNum.value);
+      if (Number.isFinite(v)) {
+        state.bg.blur = Math.max(0, v);
+        els.blur.value = Math.min(150, state.bg.blur);
+        els.blurVal.textContent = state.bg.blur + ' px';
+        render();
+      }
+    });
+    els.overlay.addEventListener('input', () => { state.bg.overlay = parseFloat(els.overlay.value); els.overlayVal.textContent = state.bg.overlay.toFixed(2); render(); });
+
+    /* vignette / noise */
+    els.vignette.addEventListener('input', () => { state.effects.vignette = parseFloat(els.vignette.value); els.vignetteVal.textContent = state.effects.vignette.toFixed(2); render(); });
+    els.noise.addEventListener('input', () => { state.effects.noise = parseFloat(els.noise.value); els.noiseVal.textContent = state.effects.noise.toFixed(2); render(); });
+
+    /* effects toggles */
+    els.shadowToggle.addEventListener('click', () => { state.effects.shadow = !state.effects.shadow; els.shadowToggle.classList.toggle('on', state.effects.shadow); els.shadowPanel.classList.toggle('hidden', !state.effects.shadow); render(); });
+    els.shadowColor.addEventListener('input', () => { state.effects.shadowColor = els.shadowColor.value; render(); });
+    els.shadowOffset.addEventListener('input', () => { state.effects.shadowOffset = parseInt(els.shadowOffset.value, 10); els.shadowOffsetVal.textContent = state.effects.shadowOffset; render(); });
+    els.shadowBlur.addEventListener('input', () => { state.effects.shadowBlur = parseInt(els.shadowBlur.value, 10); els.shadowBlurVal.textContent = state.effects.shadowBlur; render(); });
+
+    els.strokeToggle.addEventListener('click', () => { state.effects.stroke = !state.effects.stroke; els.strokeToggle.classList.toggle('on', state.effects.stroke); els.strokePanel.classList.toggle('hidden', !state.effects.stroke); render(); });
+    els.strokeColor.addEventListener('input', () => { state.effects.strokeColor = els.strokeColor.value; render(); });
+    els.strokeWidth.addEventListener('input', () => { state.effects.strokeWidth = parseFloat(els.strokeWidth.value); els.strokeWidthVal.textContent = state.effects.strokeWidth; render(); });
+
+    /* decor toggles */
+    function bindToggle(toggleEl, panelEl, key) {
+      toggleEl.addEventListener('click', () => {
+        state.decor[key] = !state.decor[key];
+        toggleEl.classList.toggle('on', state.decor[key]);
+        panelEl.classList.toggle('hidden', !state.decor[key]);
+        render();
+      });
+    }
+    bindToggle(els.topBarToggle, els.topBarPanel, 'topBar');
+    bindToggle(els.bottomBarToggle, els.bottomBarPanel, 'bottomBar');
+    bindToggle(els.quoteToggle, els.quotePanel, 'quote');
+    bindToggle(els.footerToggle, els.footerPanel, 'footer');
+
+    els.topBarColor.addEventListener('input', () => { state.decor.topBarColor = els.topBarColor.value; render(); });
+    els.topBarHeight.addEventListener('input', () => { state.decor.topBarHeight = parseInt(els.topBarHeight.value, 10); els.topBarHeightVal.textContent = state.decor.topBarHeight; render(); });
+    els.bottomBarColor.addEventListener('input', () => { state.decor.bottomBarColor = els.bottomBarColor.value; render(); });
+    els.bottomBarHeight.addEventListener('input', () => { state.decor.bottomBarHeight = parseInt(els.bottomBarHeight.value, 10); els.bottomBarHeightVal.textContent = state.decor.bottomBarHeight; render(); });
+    els.quoteColor.addEventListener('input', () => { state.decor.quoteColor = els.quoteColor.value; render(); });
+    els.quoteOpacity.addEventListener('input', () => { state.decor.quoteOpacity = parseFloat(els.quoteOpacity.value); els.quoteOpacityVal.textContent = state.decor.quoteOpacity.toFixed(2); render(); });
+    els.footerText.addEventListener('input', () => { state.decor.footerText = els.footerText.value; render(); });
+    els.footerColor.addEventListener('input', () => { state.decor.footerColor = els.footerColor.value; render(); });
+    els.footerSize.addEventListener('input', () => { state.decor.footerSize = parseInt(els.footerSize.value, 10); els.footerSizeVal.textContent = state.decor.footerSize; render(); });
+
+    /* lines */
+    els.addLine.addEventListener('click', () => {
+      if (state.lines.length >= 6) return;
+      state.lines.push({ text: '', color: null });
+      renderLineInputs(); render();
+    });
+
+    /* exports */
+    els.exportSvg.addEventListener('click', () => {
+      downloadBlob(new Blob([buildSvg()], { type: 'image/svg+xml' }), `poster_${ts()}.svg`);
+    });
+    els.exportPng.addEventListener('click', () => {
+      const svg = buildSvg();
+      const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        const { w, h } = SIZES[state.size];
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        c.toBlob(b => downloadBlob(b, `poster_${ts()}.png`), 'image/png');
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); alert('PNG 导出失败，请使用 SVG 导出。'); };
+      img.src = url;
+    });
+    els.copySvg.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(buildSvg());
+        els.copySvg.textContent = '已复制 ✓';
+        setTimeout(() => { els.copySvg.textContent = '复制 SVG 代码'; }, 1500);
+      } catch (e) { alert('复制失败，请手动复制导出的 SVG 文件。'); }
+    });
   }
 
-  function timestamp() {
-    const d = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-  }
+  /* ============================================================ */
+  /* INIT                                                         */
+  /* ============================================================ */
 
-  els.exportSvg.addEventListener('click', () => {
-    const svg = buildSvg();
-    downloadBlob(new Blob([svg], { type: 'image/svg+xml' }), `poster_${timestamp()}.svg`);
-  });
-
-  els.exportPng.addEventListener('click', () => {
-    const svg = buildSvg();
-    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = W;
-      canvas.height = H;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, W, H);
-      URL.revokeObjectURL(url);
-      canvas.toBlob(b => downloadBlob(b, `poster_${timestamp()}.png`), 'image/png');
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      alert('PNG 导出失败，请改用 SVG 导出后用其他工具转换。');
-    };
-    img.src = url;
-  });
-
-  els.copySvg.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(buildSvg());
-      els.copySvg.textContent = '已复制 ✓';
-      setTimeout(() => { els.copySvg.textContent = '复制 SVG 代码'; }, 1500);
-    } catch (e) {
-      alert('复制失败，请手动从导出的 SVG 文件中获取。');
-    }
-  });
-
-  els.addLine.addEventListener('click', () => {
-    if (lines.length >= 6) return;
-    lines.push('');
-    renderLineInputs();
-    render();
-  });
-
-  syncColorPair(els.bgColor, els.bgColorHex);
-  syncColorPair(els.textColor, els.textColorHex);
-  ['fontSize', 'lineHeight', 'fontFamily', 'fontWeight'].forEach(k => {
-    els[k].addEventListener('input', render);
-    els[k].addEventListener('change', render);
-  });
-
-  els.blur.addEventListener('input', () => {
-    els.blurValue.value = els.blur.value;
-    render();
-  });
-  els.blurValue.addEventListener('input', () => {
-    const v = parseFloat(els.blurValue.value);
-    if (Number.isFinite(v)) {
-      els.blur.value = Math.min(parseFloat(els.blur.max), Math.max(0, v));
-      render();
-    }
-  });
-  els.overlay.addEventListener('input', () => {
-    els.overlayValue.textContent = parseFloat(els.overlay.value).toFixed(2);
-    render();
-  });
-
-  els.bgImageInput.addEventListener('change', () => {
-    const file = els.bgImageInput.files && els.bgImageInput.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      bgImageDataUrl = e.target.result;
-      render();
-    };
-    reader.readAsDataURL(file);
-  });
-
-  els.bgImageClear.addEventListener('click', () => {
-    bgImageDataUrl = null;
-    els.bgImageInput.value = '';
-    render();
-  });
-
+  buildPresetCards();
+  buildSizeChips();
   renderLineInputs();
+  syncControlsToState();
+  wire();
+  updatePresetActive();
   render();
 })();
 </script>
